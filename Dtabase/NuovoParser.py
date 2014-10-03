@@ -13,7 +13,13 @@ class PathManager(object):
         dato un percorso iniziale (percorso di default), trova le directory ed i file contenuti e li salva
         in un dizionario {directory : lista di file contenuti} chiamato self.files
         :param path: nome del percorso iniziale
-        :parameter dirs: lista dei nomi delle directory contenute nel percorso iniziale
+        :type path: stringa
+        :param self.dirs: lista contenente i nomi delle stringhe
+        :type self.dirs: lista di stringhe
+        :param self.len: numero di directory presente nel percorso iniziale
+        :type self.len: intero
+        :param self.files: dizionario che associa ad ogni directory i file contenuti
+        :type self.files: dizionario{stringa : lista di stringhe}
         """
         self.path = path
         self.dirs = [dname for dname in os.listdir(self.path) if os.path.isdir(path + dname)]
@@ -22,8 +28,11 @@ class PathManager(object):
 
     def nfiles(self, dirname=None):
         """
+        Dato il nome di una directory restituisce i nomi dei file contenuti in essa
         :param dirname: nome della directory
+        :type dirname: stringa
         :return: lista dei nomi dei file contenuti nella directory
+        :rtype: lista di stringhe
         """
         if dirname not in self.dirs:
             print 'directory non trovata'
@@ -32,9 +41,13 @@ class PathManager(object):
 
     def extfiles(self, dirname=None, ext=''):
         """
+        Dati il nome di una directory e un estensione, restituisce tutti i nomi dei file con quell' estensione
         :param dirname: nome della directory
+        :type dirname: stringa
         :param ext: estensione del file
+        :type ext: stringa
         :return: lista coi nomi dei file aventi estensione 'ext'
+        :rtype:  lista di stringhe
         """
         ext = '.' + ext
         allfiles = self.nfiles(dirname)
@@ -43,8 +56,11 @@ class PathManager(object):
 
     def getpath(self, namefile):
         """
+        Dato il nome di un file restituisce il percorso completo del file
         :param namefile: nome del file completo
+        :type namefile: stringa
         :return: stringa contenente il percorso completo del file
+        :rtype: stringa
         """
         for directory in self.files:
             if namefile in self.files[directory]:
@@ -58,7 +74,23 @@ class FileManager(object):
         """
         Gestore di file. Gestisce un solo file.
         :param filename: nome del file
+        :type filename: stringa
         :param path: percorso completo del file
+        :type path: stringa
+        :param self.exdata: dizionario che contiene il prodotto del metodo datalab
+        :type self.exdata: dizionario{stringa: lista di stringhe} o dizionario{stringa: lista di liste di stringhe}
+        :param self.tabname: contiene il nome del file senza punti e senza estensione
+        :type self.tabname: stringa
+        :param self.ext: contiene l'estensione del file
+        :type self.ext: stringa
+        :param self.filename: contiene il nome del file con estensione txt
+        :type self.filename: stringa
+        :param self.filezip: contiene il nome del file con la sua estensione
+        :type self.filezip: stringa
+        :param self.text: contiene il contenuto del file
+        :type self.text: stringa
+        :param self.data: contiene i dati estratti da self.text
+        :type self.data: lista di liste di stringhe
         """
         self.exdata = dict()
         self.tabname = ''
@@ -72,7 +104,11 @@ class FileManager(object):
 
     def load(self):
         """
-        carica il file, estrae i dati dal file e salva tutto nell' attributo self.data
+        Carica il file, estrae i dati dal file e salva tutto nell' attributo self.data
+        Il comportamento è diverso a seconda dell' estensione del file:
+        * per i file zip viene letto il file txt contenuto in esso
+        * per i file non zip viene letto direttamente il file
+        viene rilevato automaticamente il tipo di separatore (riconosce solo la virgola o lo spazio)
         """
         index = self.path + "\\" + self.filezip
         if 'zip' in self.ext:
@@ -95,7 +131,9 @@ class FileManager(object):
         """
         elimina eventuali elementi '', '"' o ' ' indesiderati presenti in una lista
         :param lista: lista da ripulire
+        :type lista: lista di stringhe
         :return: lista ripulita
+        :rtype: lista di stringhe
         """
         if '"' in lista[0]:
             lista = [elem.replace('"', '') for elem in lista]
@@ -108,16 +146,18 @@ class FileManager(object):
     def gettabname(self):
         """
         Rimuove dal nome di un file i punti e l' estensione in modo che possa essere usato come nome tabella
+        e memorizza il risultato in self.tabname
         """
         self.tabname = self.filezip.replace('.', '').replace(self.ext, '')
 
     def datalab(self):
         """
         Elabora i dati in modo che self.tabname, self.names e self.exdata contengano rispettivamente:
-        il nome della tabella postgres in cui verranno salvati i dati
-        gli elementi della prima colonna della tabella
-        un dizionario {elemento prima colonna: elemento seconda colonna}
+        * il nome della tabella postgres in cui verranno salvati i dati
+        * gli elementi della prima colonna della tabella
+        * un dizionario {elemento prima colonna: elemento seconda colonna}
         gli elementi della prima colonna sono stringhe, mentre quelli della seconda sono una lista di stringhe
+        self.exdata può venire modificato tramite self.mapper() (vedi metodo)
         """
         self.gettabname()
         attributes = self.data[0]
@@ -129,6 +169,11 @@ class FileManager(object):
         self.exdata = self.mapper()
 
     def mapper(self):
+        """
+        Se l' estensione del file è csv sostituisce self.exdata con un dizionario contenente le stesse chiavi
+        ma come valore una lista contenente due liste di stringhe.
+        :return: self.exdata originale o il nuovo dizionario creato per i file .csv
+        """
         if 'csv' not in self.ext:
             return self.exdata
         fathers = defaultdict(list)
@@ -142,11 +187,13 @@ class DataBase(object):
     def __init__(self, dbname):
         """
         Classe che gestisce un database postgres.
-        dbname = nome database
-        tabname = nome tabella
-        self.con = connessione con postgres
-        self.cur = cursore
-        self.rows = lista di elementi da inserire nel database
+        :param dbname: nome database
+        :param self.tabname: nome tabella
+        :param self.con: connessione con postgres
+        :type self.con: oggetto connessione
+        :param self.cur: cursore
+        :type self.cur: oggetto cursore
+        :param self.rows: lista di elementi da inserire nel database
         """
         self.dbname = dbname
         self.creadb()
@@ -157,7 +204,8 @@ class DataBase(object):
 
     def openconnection(self):
         """
-        apre un canale con postgres e crea un cursore
+        Apre un canale con postgres e crea un cursore. Da usare solo se non è richiesta/possibile la connessione con
+        un database (i.e.: il database non esiste)
         """
         self.con = psycopg2.connect(user='postgres', host='localhost', password='postgres', port='5433')
         self.con.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
@@ -166,7 +214,7 @@ class DataBase(object):
     def dbload(self, dbname):
         # print 'database ', dbname
         """
-        apre un canale con un database
+        Apre un canale con un database (se esiste) dbname e lo imposta come database corrente.
         :param dbname: nome del database
         """
         if self.dbexist(dbname):
@@ -182,7 +230,8 @@ class DataBase(object):
 
     def creadb(self):
         """
-        crea un database dbname
+        Crea un database con nome self.dbname. È necessario usare self.openconnection() in quanto
+        il database da creare non esiste. Se invece dovesse esistere, viene segnalata la sua esistenza.
         """
         self.openconnection()
         if not self.dbexist(self.dbname):
@@ -198,8 +247,10 @@ class DataBase(object):
 
     def creatab(self, tabname):
         """
-        Crea la tabella tabname con le colonne 'nome' e 'attributi'
-        :param tabname: nome tabella
+        Crea la tabella tabname con le colonne 'nome' e 'attributi' (solo se la tabella non è già esistente).
+        se il nome del file contiene 'graph' viene creata una tabella con cinque colonne, altrimenti viene creata una
+        tabella a con due colonne.
+        :param tabname: nome della tabella
         """
         if not self.tabexists(tabname):
             try:
@@ -225,7 +276,7 @@ class DataBase(object):
 
     def addcolumn(self, tabname, column, tipo):
         """
-        aggiunge la colonna 'column' di tipo 'tipo' alla tabella 'tabname'
+        aggiunge la colonna 'column' (se non esiste) di tipo 'tipo' alla tabella 'tabname'
         :param tabname: nome tabella
         :param column: nome colonna
         :param tipo: tipo dati colonna
@@ -247,9 +298,12 @@ class DataBase(object):
     def insert(self, tabname, nome, data1, data2=None):
         """
         inserisce i dati 'nome' e 'data' nella tabella 'tabname' creata con creatab()
+        * se la tabella in cui inserire i dati è di due colonne inserisce solo gli elementi di data1 non nulli
+        * se la tabella è di cinque colonne inserisce tutti gli elementi
         :param tabname: nome della tabella
-        :param nome: stringa da inserire nella colonna nome  della tabella 'tabname'
-        :param data1: lista di stringhe da inserire nella colonna attributi della tabella 'tabname'
+        :param nome: stringa da inserire nella colonna 'nome' o 'class'  della tabella 'tabname'
+        :param data1: lista di stringhe da inserire nella colonna 'attributi' o 'children' della tabella 'tabname'
+        :param data2: lista di stringhe da inserire nella colonna 'parent' della tabella 'tabname'
         """
         data1 = list(data1)
         if data2 is not None:
@@ -276,6 +330,14 @@ class DataBase(object):
             self.cur.close()
 
     def select(self, fromwhere, what='*', where=None):
+        """
+        Effettua il select all' interno del database Postgres (self.dbname) i parametri di input cercano di conservare
+        la sintassi di SQL.
+        :param fromwhere: i parametri da passare a FROM es: pg_database, information_schema.tables
+        :param what: i parametri da passare a SELECT (* indica tutto) es: datname, table_name
+        :param where: i parametri da passare a WHERE es: table_schema = X, table_type = X
+        :return: lista dei risultati della query. Il tipo dei contenuti della lista varia a seconda della query.
+        """
         self.dbload(self.dbname)
         if where:
             sql = "SELECT %s FROM %s WHERE %s" % (what, fromwhere, where)
@@ -342,6 +404,12 @@ class Parser(object):
         """
         per ogni file.zip di ogni directory contenuti nel percorso di default file_path crea una tabella e vi inserisce
         i dati estratti dai file.
+        :param dbname: nome del database
+        :param ext: estensione del file
+        :param self.files: lista contenente i file da elaborare
+        :param self.link: percorso completo del file
+        :param self.path: oggetto PathManager per gestire i percorsi dei file
+        :param self.datab: oggetto DataBase per l' inserimento dei dati in Postgres
         """
         self.files = []
         self.link = ''
@@ -351,7 +419,7 @@ class Parser(object):
 
     def getfiles(self, directory):
         """
-        assegna all' attributo self.files la lista di file con estensione zip contenuti nella directory 'directory'
+        assegna all' attributo self.files la lista di file contenuti nella directory 'directory'
         :param directory: nome della directory
         """
         self.files = self.path.extfiles(directory, self.ext)
@@ -380,7 +448,7 @@ class Parser(object):
 
     def elaballfiles(self, directory):
         """
-        data una directory esegue il metodo elabfile per tutti i file della directory
+        data una directory esegue il metodo self.elabfile per tutti i file della directory
         :param directory: nome directory
         """
         self.getfiles(directory)
@@ -389,7 +457,7 @@ class Parser(object):
 
     def parsing(self):
         """
-        esegue il metodo elaballfiles per tutte le directori presenti nel percorso iniziale di default
+        esegue il metodo self.elaballfiles per tutte le directory presenti nel percorso iniziale di default
         """
         for directory in self.path.dirs:
             self.elaballfiles(directory)
