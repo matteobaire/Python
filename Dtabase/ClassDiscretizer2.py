@@ -18,6 +18,49 @@ def extract(myfile):
     return findata.data
 
 
+class Examples(object):
+    """
+    Gestisce una serie di esempi i cui dati sono memorizzati in due matrici: una contenente i valori degli attributi
+    e l'altro contenente le classi con cui vengono etichettati gli esempi.
+    """
+
+    def __init__(self, mydata, mytree):
+        self.dim = len(mydata)
+        self.names = [mydata[nindex][0] for nindex in xrange(1, self.dim)]
+        self.features = {key: value for key, value in enumerate(mydata[0])}
+        self.classes = mytree[0]
+        self.value = [mydata[dindex][1:] for dindex in xrange(1, self.dim)]
+        self.belong = [mytree[dindex][1:] for dindex in xrange(1, self.dim)]
+
+    def maketree(self):
+        """
+        Crea un dizionario che associa al nome di ciascun esempio le relative classi
+        In base al parametro self.filtered il dizionario avrà solo le foglie (se True) o tutte le classi (se False)
+        """
+        tree = defaultdict(list)
+        for n in xrange(len(self.names)):
+            for j in xrange(len(self.classes)):
+                if self.belong[n][j] != '0' and self.classes[j] != '00':
+                    tree[self.names[n]].append(self.classes[j])
+        return dict(tree)
+
+    def maketable(self, attribute=None):
+        """
+        Crea un dizionario che associa al nome dell' esempio il valore della feature selezionata.
+        Nel caso il parametro attribute sia Null, vengono associati all'esempio la lista dei valori
+        di tutte le features.
+        :param attribute: indice della feature attributo da selezionare (None per averli tutti)
+        restituisce il dizionario creato
+        """
+        table = dict()
+        for name, value in zip(self.names, self.value):
+            if attribute is None:
+                table[name] = value
+            else:
+                table[name] = value[attribute]
+        return table
+
+
 class Subset(object):
     def __init__(self, tree, table, features):
         self.tree = tree
@@ -101,49 +144,6 @@ class Set(object):
 
     def __getitem__(self, item):
         return self.set[item]
-
-
-class Examples(object):
-    """
-    Gestisce una serie di esempi i cui dati sono memorizzati in due matrici: una contenente i valori degli attributi
-    e l'altro contenente le classi con cui vengono etichettati gli esempi.
-    """
-
-    def __init__(self, mydata, mytree):
-        self.dim = len(mydata)
-        self.names = [mydata[nindex][0] for nindex in xrange(1, self.dim)]
-        self.features = {key: value for key, value in enumerate(mydata[0])}
-        self.classes = mytree[0]
-        self.value = [mydata[dindex][1:] for dindex in xrange(1, self.dim)]
-        self.belong = [mytree[dindex][1:] for dindex in xrange(1, self.dim)]
-
-    def maketree(self):
-        """
-        Crea un dizionario che associa al nome di ciascun esempio le relative classi
-        In base al parametro self.filtered il dizionario avrà solo le foglie (se True) o tutte le classi (se False)
-        """
-        tree = defaultdict(list)
-        for n in xrange(len(self.names)):
-            for j in xrange(len(self.classes)):
-                if self.belong[n][j] != '0' and self.classes[j] != '00':
-                    tree[self.names[n]].append(self.classes[j])
-        return dict(tree)
-
-    def maketable(self, attribute=None):
-        """
-        Crea un dizionario che associa al nome dell' esempio il valore della feature selezionata.
-        Nel caso il parametro attribute sia Null, vengono associati all'esempio la lista dei valori
-        di tutte le features.
-        :param attribute: indice della feature attributo da selezionare (None per averli tutti)
-        restituisce il dizionario creato
-        """
-        table = dict()
-        for name, value in zip(self.names, self.value):
-            if attribute is None:
-                table[name] = value
-            else:
-                table[name] = value[attribute]
-        return table
 
 
 if __name__ == '__main__':
